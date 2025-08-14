@@ -1,16 +1,40 @@
 import firebase_admin
 from firebase_admin import credentials, auth
-from pathlib import Path
+import os
+import base64
+import json
+import logging
+from fastapi import HTTPException
+from dotenv import load_dotenv
 
-# Construir la ruta al fichero de credenciales de forma dinámica
-# 1. Obtener la ruta del fichero actual (firebase.py)
-# 2. Navegar al directorio padre (utils/)
-# 3. Navegar al directorio padre superior (Proyecto2/)
-# 4. Unir con la ruta a 'secrests/secrests.json'
-cred_path = Path(__file__).parent.parent / "secrests" / "secrests.json"
+load_dotenv()
 
-cred = credentials.Certificate(cred_path)
-firebase_admin.initialize_app(cred)
+# Configurar un logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def initialize_firebase():
+    if firebase_admin._apps:
+        return
+
+    try:
+        firebase_creds_base64 = os.getenv("FIREBASE_CREDENTIALS_BASE64")
+
+        if firebase_creds_base64:
+            firebase_creds_json = base64.b64decode(firebase_creds_base64).decode('utf-8')
+            firebase_creds = json.loads(firebase_creds_json)
+            cred = credentials.Certificate(firebase_creds)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase initialized with environment variable credentials")
+        else:
+            # Fallback to local file (for local development)
+            cred = credentials.Certificate("secrests/secrests.json")
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase initialized with JSON file")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase: {e}")
+        raise HTTPException(status_code=500, detail=f"Firebase configuration error: {str(e)}")
 
 def create_firebase_user(email, password):
     return auth.create_user(email=email, password=password)

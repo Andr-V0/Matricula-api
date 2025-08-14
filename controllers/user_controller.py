@@ -93,3 +93,77 @@ def update_user_role_by_id(user_id: str, role_update: UserRoleUpdate):
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+def get_all_users_with_roles():
+    try:
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "tipos_usuarios",
+                    "localField": "role1",
+                    "foreignField": "_id",
+                    "as": "role1_info"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "tipos_usuarios",
+                    "localField": "role2",
+                    "foreignField": "_id",
+                    "as": "role2_info"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "tipos_usuarios",
+                    "localField": "role3",
+                    "foreignField": "_id",
+                    "as": "role3_info"
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "nombre": 1,
+                    "apellido": 1,
+                    "roles": {
+                        "$filter": {
+                            "input": {
+                                "$concatArrays": [
+                                    "$role1_info.codigo",
+                                    "$role2_info.codigo",
+                                    "$role3_info.codigo"
+                                ]
+                            },
+                            "as": "role",
+                            "cond": { "$ne": [ "$$role", None ] }
+                        }
+                    }
+                }
+            }
+        ]
+        users = list(db.users.aggregate(pipeline))
+        return users
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+def get_all_students():
+    try:
+        students = list(db.Estudiantes.find({}, {"_id": 0, "nombre": 1, "apellido": 1}))
+        return students
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+def get_all_professors():
+    try:
+        professors = list(db.Profesores.find({}, {"_id": 0, "nombre": 1, "apellido": 1}))
+        return professors
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+def get_all_admins():
+    try:
+        admins = list(db.Administradores.find({}, {"_id": 0, "nombre": 1, "apellido": 1}))
+        return admins
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

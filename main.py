@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
 from routes import auth, tipos_usuario, pac, asignatura, matricula, pipelines, user
-from utils.db import db
+from utils.db import db, test_connection
+from utils.firebase import initialize_firebase
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -20,6 +21,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_db_client():
+    initialize_firebase()
     # Verifica y crea el tipo de usuario "EST"
     if not db.tipos_usuarios.find_one({"codigo": "EST"}):
         db.tipos_usuarios.insert_one({"codigo": "EST", "nombre": "Estudiante"})
@@ -39,6 +41,34 @@ def startup_db_client():
 def shutdown_db_client():
     pass
 
+@app.get("/health")
+def health_check():
+    try:
+        return {
+            "status": "healthy", 
+            "timestamp": "2025-08-02", 
+            "service": "matricula-api",
+            "environment": "production"
+        }
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
+@app.get("/ready")
+def readiness_check():
+    try:
+        test_connection()
+        return {
+            "status": "ready",
+            "database": "connected",
+            "service": "matricula-api"
+        }
+    except Exception as e:
+        return {
+            "status": "not_ready",
+            "database": "disconnected",
+            "service": "matricula-api",
+            "error": str(e)
+        }
 
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
