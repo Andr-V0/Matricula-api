@@ -8,3 +8,4 @@ firebase-admin
 email-validator
 python-multipart
 certifi
+pytest
