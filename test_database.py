@@ -2,10 +2,10 @@ import pytest
 from utils.db import test_connection, client, db
 import os
 
-# load_dotenv() se llama en utils.db, no es necesario volver a llamarlo aquí.
+# load_dotenv() ya se llama en utils.db
 
 def test_env_variables():
-    """Prueba si las variables de entorno están configuradas."""
+    """Prueba si las variables están configuradas."""
     mongodb_uri = os.getenv("MONGODB_URI")
     database_name = os.getenv("DATABASE_NAME")
     assert mongodb_uri is not None, "MONGODB_URI no está configurado."
@@ -19,13 +19,11 @@ def test_db_connection():
     test_connection()
 
 def test_mongo_client():
-    """Prueba si el cliente de MongoDB está inicializado."""
+    """Prueba si MongoDB está inicializado."""
     assert client is not None, "El cliente de MongoDB es None."
 
 def test_get_collection():
     """Prueba si se puede recuperar una colección."""
-    # Esta prueba asume que el nombre de la base de datos está correctamente configurado en el archivo .env
-    # y que la base de datos existe.
     db_name = os.getenv("DATABASE_NAME")
     assert db.name == db_name, f"El nombre de la base de datos no coincide. Esperado: {db_name}, Obtenido: {db.name}"
     
